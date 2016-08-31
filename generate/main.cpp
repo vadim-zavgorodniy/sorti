@@ -90,7 +90,6 @@ void generate(std::ostream& ostr, size_t maxSize) {
     // counting string size
     char numBuf[20];
     sprintf (numBuf, "%d", num);
-
     std::string res(numBuf);
     std::string str = "";
 
@@ -104,6 +103,7 @@ void generate(std::ostream& ostr, size_t maxSize) {
       }
     }
 
+    // if it is not a repeat gen new str
     if (str.empty()) {
       str = generateString(1024);
     }
@@ -113,7 +113,9 @@ void generate(std::ostream& ostr, size_t maxSize) {
 
     ostr << res << std::endl;
 
+    // file size
     size += res.size();
+    // record count
     ++count;
 
     if (count % repeatUpdate == 0) {
