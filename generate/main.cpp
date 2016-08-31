@@ -11,8 +11,9 @@
 
 #define DELIMITER ". "
 
-std::vector<int> CHAR_TABLE;
+std::vector<char> CHAR_TABLE;
 
+//============================================================
 void initCharTable() {
   CHAR_TABLE.clear();
   CHAR_TABLE.push_back(32); // space
@@ -39,16 +40,27 @@ void initCharTable() {
   }
 }
 
+//============================================================
 std::string generateString(size_t maxLength) {
+  // assume that min maxLenth is 10
+  const int MIN_BLOCK = 10;
+  if (maxLength < MIN_BLOCK) {
+    maxLength = MIN_BLOCK;
+  }
+
   // actual string size
   size_t len = rand() % maxLength;
 
   std::string str;
 
-  for (int i = 0; i < len; ++i) {
-    int sym = rand() % CHAR_TABLE.size();
+  // let's gen it
+  for (int i = 0; i < len; i += MIN_BLOCK) {
+    // table offset
+    int offset = rand() % (CHAR_TABLE.size() - MIN_BLOCK);
 
-    str += (char)CHAR_TABLE[sym];
+    for (int j = 0; j < MIN_BLOCK; ++j) {
+      str += CHAR_TABLE[offset + j];
+    }
   }
 
   return str;
