@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <cstring>
 #include <vector>
 #include <stdexcept>
 #include <stdlib.h>
@@ -55,12 +56,14 @@ std::string generateString(size_t maxLength) {
 
   // let's gen it
   for (int i = 0; i < len; i += MIN_BLOCK) {
+    char buf[MIN_BLOCK + 1];
+    memset(buf, '\0', MIN_BLOCK+1);
     // table offset
     int offset = rand() % (CHAR_TABLE.size() - MIN_BLOCK);
 
-    for (int j = 0; j < MIN_BLOCK; ++j) {
-      str += CHAR_TABLE[offset + j];
-    }
+    // copy blocks to result string
+    strncpy(buf, &CHAR_TABLE[offset], MIN_BLOCK);
+    str += buf;
   }
 
   return str;
@@ -71,7 +74,14 @@ void generate(std::ostream& ostr, size_t maxSize) {
   initCharTable();
 
   srand(time(NULL));
+  // file size
   size_t size = 0;
+  // row count
+  long count = 0;
+  // skip amount before repeat string update
+  int repeatUpdate = 50;
+  std::string repeatStr = "";
+  int repeats = 0;
 
   // while result size less then maxSize in kB
   while (size / 1024 < maxSize) {
@@ -82,28 +92,51 @@ void generate(std::ostream& ostr, size_t maxSize) {
     sprintf (numBuf, "%d", num);
 
     std::string res(numBuf);
+    std::string str = "";
+
+    // 2 times often we try to repeat string
+    if (count % (repeatUpdate / 2) == 0) {
+      if (rand() % 2 == 1) {
+        if (!repeatStr.empty()) {
+          str = repeatStr;
+          repeats++;
+        }
+      }
+    }
+
+    if (str.empty()) {
+      str = generateString(1024);
+    }
+
     res += DELIMITER;
-    res += generateString(1024);
+    res += str;
 
     ostr << res << std::endl;
 
     size += res.size();
+    ++count;
+
+    if (count % repeatUpdate == 0) {
+      // shell we remember it?
+      if (rand() % 2 == 1) {
+        repeatStr = str;
+      }
+    }
   }
+
+  std::cout << "Rows count: " << count << std::endl;
+  std::cout << "Repeats count: " << repeats << std::endl;
 }
 
 //============================================================
 int main(int argc, char* argv[]) {
 
-  std::cout << "Start" << std::endl;
+  std::cout << "Start." << std::endl;
   try {
-    // std::cout << "Generated lines: " << items->size() << std::endl;
-    // std::cout << "=============" << std::endl;
-
     std::ofstream ostr("gen_data.txt");
     generate(ostr, 1024*1024);
     ostr.close();
-//    generate(std::cout, 10);
-
+    std::cout << "Finish." << std::endl;
   }
   catch (std::exception e) {
     std::cerr << "Error: " << e.what() << std::endl;
