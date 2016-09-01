@@ -83,7 +83,7 @@ std::string DataGeneragor::generateString(size_t maxLength) {
     str += buf;
   }
 
-  return str;
+  return str.substr(0, maxLength);
 }
 
 //============================================================
