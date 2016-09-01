@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <string>
 #include <vector>
 #include <list>
@@ -12,6 +13,21 @@
 
 #include "item.hpp"
 
+//============================================================
+// AppConfig
+//============================================================
+class AppConfig {
+public:
+  std::string sourceName;
+  std::string destName;
+  size_t size;
+
+  void parseFromOptions(int argc, char* argv[]);
+};
+
+
+//============================================================
+// ChunkIterator
 //============================================================
 class ChunkIterator {
 private:
@@ -171,6 +187,8 @@ void mergeChunks(std::vector<std::string> chunkNames, std::string destName) {
 
 //============================================================
 void doSort(std::string sourceName, std::string destName, size_t maxSize) {
+  maxSize *= 1024 * 1024;
+
   std::ifstream istr;
 
   openFileIn(sourceName.c_str(), istr);
@@ -200,6 +218,7 @@ void doSort(std::string sourceName, std::string destName, size_t maxSize) {
       while (!istr.eof()) {
         size_t actualSize(maxSize);
         // read and sort
+        items.reset(NULL);
         items.reset(getChunk(istr, actualSize));
 
         // new temp file name
@@ -226,19 +245,53 @@ void doSort(std::string sourceName, std::string destName, size_t maxSize) {
 }
 
 //============================================================
+void AppConfig::parseFromOptions(int argc, char* argv[]) {
+  const char* usage = "Usage: sort source_file dest_file [ram_size]\n" \
+    "  source_file - file name to sort\n"                   \
+    "  dest_file   - result file name\n"                      \
+    "  ram_size - desired RAM usage size in Mb (default 4 Gb)\n";
+
+  if (argc < 3) {
+    std::cerr << usage << std::endl;
+    throw std::runtime_error("Illegal arguments");
+  }
+  try {
+    sourceName = argv[1];
+    destName = argv[2];
+
+    if (argc > 3) {
+      std::istringstream buffer(argv[3]);
+      buffer.exceptions(std::ifstream::failbit);
+      buffer >> size;
+    }
+  }
+  catch (std::exception e) {
+    std::cerr << usage << std::endl;
+    throw std::runtime_error("Filed to parse the parameters");
+  }
+}
+
+//============================================================
 int main(int argc, char* argv[]) {
 
   std::cout << "Start." << std::endl;
 
   try {
+    AppConfig conf;
+    // conf.sourceName = "/home/warmouse/data/sorti-test/gen_data_10g.txt";
+    // conf.destName = "/home/warmouse/data/sorti-test/sorted_data_10g.txt";
+    // process up to 4 Gb
+    // conf.size = long(4 * 1024 * 1024) * 1024;
+    conf.size = 4096;
+    conf.parseFromOptions(argc, argv);
 
-    // process up to 2 Gb
-    size_t size = long(2 * 1024 * 1024) * 1024;
-
-    doSort("/home/warmouse/data/sorti-test/gen_data_10g.txt",
-           "/home/warmouse/data/sorti-test/sorted_data_10g.txt", size);
+    doSort(conf.sourceName, conf.destName, conf.size);
 
     std::cout << "Finish." << std::endl;
+  }
+  catch (std::runtime_error e) {
+    std::cerr << "Error: " << e.what() << std::endl;
+    return 1;
   }
   catch (std::exception e) {
     std::cerr << "Error: " << e.what() << std::endl;

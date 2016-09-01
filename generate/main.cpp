@@ -174,7 +174,6 @@ void AppConfig::parseFromOptions(int argc, char* argv[]) {
     throw std::runtime_error("Illegal arguments");
   }
 
-  // size = atoi(argv[1]);
   try {
     std::istringstream buffer(argv[1]);
     buffer.exceptions(std::ifstream::failbit);
