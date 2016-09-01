@@ -2,70 +2,56 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <list>
 #include <stdexcept>
 #include <stdlib.h>
 #include <cstdlib>
 #include <algorithm>
 #include <memory>
+#include <limits.h>
 
-#define DELIMITOR ". "
+#include "item.hpp"
 
 //============================================================
-struct Item {
-  unsigned num;
-  std::string str;
+class ChunkIterator {
+private:
+  std::string fName;
+  std::ifstream istream;
+  Item current;
+  bool isHasNext;
+
+public:
+  ChunkIterator(const std::string fileName) : fName(fileName) {
+    istream.open(fName.c_str());
+    next();
+  }
+
+  ~ChunkIterator() {
+    istream.close();
+    remove(fName.c_str());
+  }
+
+  bool hasNext() {
+    return isHasNext;
+  }
+
+  Item next() {
+    std::string line;
+    isHasNext = getline(istream, line);
+    if (isHasNext) {
+      current = parseItem(line);
+    }
+    return current;
+  }
+
+  Item getItem() {
+    return current;
+  }
 };
 
-typedef std::vector<Item> ItemList;
 
 //============================================================
-std::ostream& operator<<(std::ostream& ostr, const Item& obj)
-{
-  ostr << obj.num << DELIMITOR << obj.str;
-  return ostr;
-}
-
-//============================================================
-Item parseItem(std::string line) {
-  Item item;
-  int pos = line.find(". ");
-  std::string numStr = line.substr(0, pos);
-  item.num = atoi(numStr.c_str());
-  item.str = line.substr(pos+2, line.size());
-
-  return item;
-}
-
-//============================================================
-int compareItemsQuick(const void * p1, const void * p2) {
-  Item& a = *(Item*)p1;
-  Item& b = *(Item*)p2;
-
-  if (a.str <  b.str) return -1;
-  if (a.str >  b.str) return 1;
-  if (a.str == b.str) {
-    if (a.num < b.num) return -1;
-    if (a.num > b.num) return 1;
-  }
-  return 0;
-}
-
-//============================================================
-bool compareItems(const Item a, const Item b) {
-  // Item& a = *(Item*)p1;
-  // Item& b = *(Item*)p2;
-
-  if (a.str <  b.str) return true;
-  if (a.str >  b.str) return false;
-  if (a.str == b.str) {
-    if (a.num < b.num) return true;
-    if (a.num > b.num) return false;
-  }
-  return false;
-}
-
-//============================================================
-void openFile(std::string name, std::ifstream& istr) {
+void openFileIn(std::string name, std::ifstream& istr) {
   istr.open(name.c_str(), std::ifstream::in);
   if (!istr.is_open()) {
     throw std::runtime_error("Unable to open file: " + name);
@@ -73,62 +59,186 @@ void openFile(std::string name, std::ifstream& istr) {
 }
 
 //============================================================
-ItemList* readFile(std::istream& myfile, size_t maxCount = std::string::npos) {
+ItemList* readItems(std::istream& istr, size_t& readSize) {
 
   ItemList* lst = new ItemList();
 
-  int count = 0;
+  size_t size = 0;
   std::string line;
 
-  while (getline(myfile, line) && count < maxCount) {
+  while (getline(istr, line)) {
     Item item = parseItem(line);
     lst->push_back(item);
-    ++count;
+
+    size += line.size();
+
+    if (size >= readSize) {
+      break;
+    }
   }
+
+  // return actual readed size
+  readSize = size;
 
   return lst;
 }
 
 //============================================================
-void printList(ItemList* list, std::ostream& ostr) {
-  for (ItemList::const_iterator it = list->begin(); it != list->end(); ++it) {
-    ostr << *it << std::endl;
+ItemList* getChunk(std::ifstream& istr, size_t size) {
+
+  // readout items
+  size_t actualSize(size);
+  ItemList* items(readItems(istr, actualSize));
+
+  std::cout << "Readed lines: " << items->size() << std::endl;
+  std::cout << "Readed size: " << actualSize / 1024 / 1024 << " Mb" << std::endl;
+
+  // sort
+  qsort(&(*items)[0], items->size(), sizeof(Item), compareItemsQuick);
+
+  return items;
+}
+
+//============================================================
+void storeChunk(ItemList* list, std::string filename) {
+  std::ofstream ostr(filename.c_str());
+
+  try {
+    outToStream(list, ostr);
+    ostr.close();
   }
+  catch (std::exception e) {
+    ostr.close();
+    throw e;
+  }
+}
+
+//============================================================
+void mergeChunks(std::vector<std::string> chunkNames, std::string destName) {
+
+  std::list<ChunkIterator*> chunkFiles;
+
+  // result stream
+  std::ofstream ostr(destName.c_str());
+  std::cout << "Merging to: " << destName << std::endl;
+  long count = 0;
+  try {
+    typedef std::vector<std::string>::const_iterator VCSIterT;
+    for (VCSIterT iter = chunkNames.begin(); iter != chunkNames.end(); ++iter) {
+      ChunkIterator* citer = new ChunkIterator(*iter);
+      chunkFiles.push_back(citer);
+    }
+
+    // assume the first is min
+    ChunkIterator* min = *(chunkFiles.begin());
+    while (!chunkFiles.empty()) {
+
+      typedef std::list<ChunkIterator*>::iterator CIterT;
+      for (CIterT iter = chunkFiles.begin(); iter != chunkFiles.end(); ++iter) {
+        // if next item less then min
+        if (compareItems(min->getItem(), (*iter)->getItem()) == false) {
+          min = *iter;
+        }
+      }
+
+      // write to dest file
+      count++;
+      ostr << min->getItem() << std::endl;
+
+      // try to take next item
+      min->next();
+      // if failed then remove file
+      if (!min->hasNext()) {
+        // stream is empty, so remove
+        chunkFiles.remove(min);
+        delete min;
+
+        if (!chunkFiles.empty()) {
+          // assume the first is min
+          min = *(chunkFiles.begin());
+        }
+      }
+
+    }
+
+    ostr.close();
+  }
+  catch (std::exception e) {
+    ostr.close();
+    throw e;
+  }
+}
+
+//============================================================
+void doSort(std::string sourceName, std::string destName, size_t maxSize) {
+  std::ifstream istr;
+
+  openFileIn(sourceName.c_str(), istr);
+  try {
+
+    size_t actualSize(maxSize);
+    // read and sort
+    std::auto_ptr<ItemList> items(getChunk(istr, actualSize));
+
+    // if we read all the file just sort it and write to destName file
+    if (istr.eof()) {
+      // write
+      storeChunk(items.get(), destName.c_str());
+    }
+    else {
+
+      std::vector<std::string> chunkNames;
+
+      // new temp file name
+      std::string tmpFileName = tmpnam(NULL);
+      chunkNames.push_back(tmpFileName);
+      std::cout << "tmpFilename: " << tmpFileName << std::endl;
+      // write to temp file
+      storeChunk(items.get(), tmpFileName.c_str());
+
+      // read file by chunks
+      while (!istr.eof()) {
+        size_t actualSize(maxSize);
+        // read and sort
+        items.reset(getChunk(istr, actualSize));
+
+        // new temp file name
+        std::string tmpFileName = tmpnam(NULL);
+        chunkNames.push_back(tmpFileName);
+
+        std::cout << "tmpFilename: " << tmpFileName << std::endl;
+
+        // write to temp file
+        storeChunk(items.get(), tmpFileName.c_str());
+      }
+
+      // and finally merge it
+      mergeChunks(chunkNames, destName);
+    }
+
+    istr.close();
+  }
+  catch (std::exception e) {
+    istr.close();
+    throw e;
+  }
+
 }
 
 //============================================================
 int main(int argc, char* argv[]) {
 
-  std::cout << "Start" << std::endl;
+  std::cout << "Start." << std::endl;
 
   try {
-    std::ifstream istr;
 
-//    openFile("gen_data.txt", istr);
-    openFile("../generate/gen_data1.txt", istr);
-    std::auto_ptr<ItemList> items;
-    try {
-      // items.reset(readFile(istr, 10));
-      items.reset(readFile(istr));
+    // process up to 2 Gb
+    size_t size = long(2 * 1024 * 1024) * 1024;
 
-      istr.close();
-    }
-    catch (std::exception e) {
-      istr.close();
-      throw e;
-    }
+    doSort("/home/warmouse/data/sorti-test/gen_data_10g.txt",
+           "/home/warmouse/data/sorti-test/sorted_data_10g.txt", size);
 
-    // printList(items.get(), std::cout);
-    std::cout << "Readed lines: " << items->size() << std::endl;
-    std::cout << "=============" << std::endl;
-
-    qsort(&(*items)[0], items->size(), sizeof(Item), compareItemsQuick);
-//    sort(items->begin(), items->end(), compareItems);
-
-    // printList(items.get(), std::cout);
-    std::ofstream ostr("sorted_data.txt");
-    printList(items.get(), ostr);
-
+    std::cout << "Finish." << std::endl;
   }
   catch (std::exception e) {
     std::cerr << "Error: " << e.what() << std::endl;
