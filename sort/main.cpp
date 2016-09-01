@@ -37,18 +37,18 @@ Item parseItem(std::string line) {
 }
 
 //============================================================
-// int compareItems(const void * p1, const void * p2) {
-//   Item& a = *(Item*)p1;
-//   Item& b = *(Item*)p2;
+int compareItemsQuick(const void * p1, const void * p2) {
+  Item& a = *(Item*)p1;
+  Item& b = *(Item*)p2;
 
-//   if (a.str <  b.str) return -1;
-//   if (a.str >  b.str) return 1;
-//   if (a.str == b.str) {
-//     if (a.num < b.num) return -1;
-//     if (a.num > b.num) return 1;
-//   }
-//   return 0;
-// }
+  if (a.str <  b.str) return -1;
+  if (a.str >  b.str) return 1;
+  if (a.str == b.str) {
+    if (a.num < b.num) return -1;
+    if (a.num > b.num) return 1;
+  }
+  return 0;
+}
 
 //============================================================
 bool compareItems(const Item a, const Item b) {
@@ -105,7 +105,7 @@ int main(int argc, char* argv[]) {
     std::ifstream istr;
 
 //    openFile("gen_data.txt", istr);
-    openFile("../generate/gen_data.txt", istr);
+    openFile("../generate/gen_data1.txt", istr);
     std::auto_ptr<ItemList> items;
     try {
       // items.reset(readFile(istr, 10));
@@ -122,8 +122,8 @@ int main(int argc, char* argv[]) {
     std::cout << "Readed lines: " << items->size() << std::endl;
     std::cout << "=============" << std::endl;
 
-//    qsort(&(*items)[0], items->size(), sizeof(Item), compareItems);
-    sort(items->begin(), items->end(), compareItems);
+    qsort(&(*items)[0], items->size(), sizeof(Item), compareItemsQuick);
+//    sort(items->begin(), items->end(), compareItems);
 
     // printList(items.get(), std::cout);
     std::ofstream ostr("sorted_data.txt");
