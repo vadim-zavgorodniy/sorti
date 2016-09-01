@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <string>
 #include <cstring>
 #include <vector>
@@ -12,6 +13,9 @@
 
 #define DELIMITER ". "
 
+//============================================================
+// DataGeneragor
+//============================================================
 class DataGeneragor {
 private:
   std::vector<char> charTable;
@@ -30,6 +34,19 @@ protected:
 public:
   Statistics generate(std::ostream& ostr, size_t maxSize);
 };
+
+
+//============================================================
+// AppConfig
+//============================================================
+class AppConfig {
+public:
+  size_t size;
+  std::string filename;
+
+  void parseFromOptions(int argc, char* argv[]);
+};
+
 
 //============================================================
 void DataGeneragor::initCharTable() {
@@ -101,8 +118,8 @@ DataGeneragor::Statistics DataGeneragor::generate(std::ostream& ostr, size_t max
   int repeatUpdate = 50;
   std::string repeatStr = "";
 
-  // while result size less then maxSize in kB
-  while (size / 1024 < maxSize) {
+  // while result size less then maxSize in Mb
+  while (size / (1024*1024) < maxSize) {
     int num = rand() % INT_MAX;
 
     // counting string size
@@ -126,8 +143,7 @@ DataGeneragor::Statistics DataGeneragor::generate(std::ostream& ostr, size_t max
       str = generateString(1024);
     }
 
-    res += DELIMITER;
-    res += str;
+    res += DELIMITER + str;
 
     ostr << res << std::endl;
 
@@ -148,14 +164,48 @@ DataGeneragor::Statistics DataGeneragor::generate(std::ostream& ostr, size_t max
 }
 
 //============================================================
+void AppConfig::parseFromOptions(int argc, char* argv[]) {
+  const char* usage = "Usage: generate file_size file_name\n" \
+    "  file_size - desired data file size in Mb\n"            \
+    "  file_name - file name to generate";
+
+  if (argc < 3) {
+    std::cerr << usage << std::endl;
+    throw std::runtime_error("Illegal arguments");
+  }
+
+  // size = atoi(argv[1]);
+  try {
+    std::istringstream buffer(argv[1]);
+    buffer.exceptions(std::ifstream::failbit);
+    buffer >> size;
+
+    filename = argv[2];
+  }
+  catch (std::exception e) {
+    std::cerr << usage << std::endl;
+    throw std::runtime_error("Filed to parse the parameters");
+  }
+}
+
+
+//============================================================
+// main
+//============================================================
 int main(int argc, char* argv[]) {
 
   std::cout << "Start." << std::endl;
+
   try {
-    std::ofstream ostr("gen_data1.txt");
+    AppConfig conf;
+    // conf.filename = "/home/warmouse/data/sorti-test/gen_data.txt";
+    // conf.size = 1024;
+    conf.parseFromOptions(argc, argv);
+
+    std::ofstream ostr(conf.filename.c_str());
 
     DataGeneragor dgen;
-    DataGeneragor::Statistics stat = dgen.generate(ostr, 1024*1024);
+    DataGeneragor::Statistics stat = dgen.generate(ostr, conf.size);
     ostr.close();
 
     std::cout << "Rows count: " << stat.count << std::endl;
@@ -163,13 +213,17 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Finish." << std::endl;
   }
-  catch (std::exception e) {
+  catch (std::runtime_error e) {
     std::cerr << "Error: " << e.what() << std::endl;
     return 1;
   }
+  catch (std::exception e) {
+    std::cerr << "Exception: " << e.what() << std::endl;
+    return 2;
+  }
   catch (...) {
     std::cerr << "Program crashed." << std::endl;
-    return 2;
+    return 3;
   }
 
   return 0;
