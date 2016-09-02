@@ -104,6 +104,7 @@ size_t getChunk(std::ifstream& istr, size_t size, ItemList& items) {
   std::cout << "Readed size: " << actualSize / 1024 / 1024 << " Mb" << std::endl;
 
   // sort
+//  std::sort(items.begin(), items.end(), compareItems);
   qsort(&(items)[0], items.size(), sizeof(Item), compareItemsQuick);
 
   return actualSize;
@@ -173,7 +174,7 @@ void doSort(const std::string& sourceName, const std::string& destName, size_t m
 
   std::ifstream istr;
 
-  openFileIn(sourceName.c_str(), istr);
+  openFileIn(sourceName, istr);
 
   // read and sort
   ItemList items;
@@ -185,7 +186,7 @@ void doSort(const std::string& sourceName, const std::string& destName, size_t m
   // if we read all the file just sort it and write to destName file
   if (istr.eof()) {
     // write
-    storeChunk(items, destName.c_str());
+    storeChunk(items, destName);
   }
   else {
 
@@ -196,7 +197,7 @@ void doSort(const std::string& sourceName, const std::string& destName, size_t m
     chunkNames.push_back(tmpFileName);
     std::cout << "tmpFilename: " << tmpFileName << std::endl;
     // write to temp file
-    storeChunk(items, tmpFileName.c_str());
+    storeChunk(items, tmpFileName);
 
     // read file by chunks
     while (!istr.eof()) {
@@ -211,7 +212,7 @@ void doSort(const std::string& sourceName, const std::string& destName, size_t m
       std::cout << "tmpFilename: " << tmpFileName << std::endl;
 
       // write to temp file
-      storeChunk(items, tmpFileName.c_str());
+      storeChunk(items, tmpFileName);
     }
 
     // and finally merge it

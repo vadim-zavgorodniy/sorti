@@ -5,12 +5,12 @@
 
 #include "item.hpp"
 
-#define DELIMITOR ". "
+#define DELIMITER ". "
 
 //============================================================
 std::ostream& operator<<(std::ostream& ostr, const Item& obj)
 {
-  ostr << obj.num << DELIMITOR << obj.str;
+  ostr << obj.num << DELIMITER << obj.str;
   return ostr;
 }
 
