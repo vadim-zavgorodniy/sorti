@@ -37,7 +37,7 @@ private:
   bool isHasNext;
 
 public:
-  ChunkIterator(const std::string fileName) : fName(fileName) {
+  ChunkIterator(const std::string& fileName) : fName(fileName) {
     istream.open(fName.c_str());
     next();
   }
@@ -67,7 +67,7 @@ public:
 
 
 //============================================================
-void openFileIn(std::string name, std::ifstream& istr) {
+void openFileIn(const std::string& name, std::ifstream& istr) {
   istr.open(name.c_str());
   if (!istr.is_open()) {
     throw std::runtime_error("Unable to open file: " + name);
@@ -97,9 +97,6 @@ size_t readItems(std::istream& istr, size_t readSize, ItemList& items) {
 //============================================================
 size_t getChunk(std::ifstream& istr, size_t size, ItemList& items) {
 
-  // reserve some mem (assume the average str len is 1024 / 2)
-  items.reserve(size / 1024 / 2);
-
   // readout items
   size_t actualSize = readItems(istr, size, items);
 
@@ -113,7 +110,7 @@ size_t getChunk(std::ifstream& istr, size_t size, ItemList& items) {
 }
 
 //============================================================
-void storeChunk(const ItemList& list, std::string filename) {
+void storeChunk(const ItemList& list, const std::string& filename) {
   std::ofstream ostr(filename.c_str());
 
   outToStream(list, ostr);
@@ -121,7 +118,7 @@ void storeChunk(const ItemList& list, std::string filename) {
 }
 
 //============================================================
-void mergeChunks(std::vector<std::string> chunkNames, std::string destName) {
+void mergeChunks(const std::vector<std::string>& chunkNames, const std::string& destName) {
 
   std::list<ChunkIterator*> chunkFiles;
 
@@ -171,7 +168,7 @@ void mergeChunks(std::vector<std::string> chunkNames, std::string destName) {
 }
 
 //============================================================
-void doSort(std::string sourceName, std::string destName, size_t maxSize) {
+void doSort(const std::string& sourceName, const std::string& destName, size_t maxSize) {
   maxSize *= 1024 * 1024;
 
   std::ifstream istr;
@@ -180,6 +177,9 @@ void doSort(std::string sourceName, std::string destName, size_t maxSize) {
 
   // read and sort
   ItemList items;
+  // reserve some mem (assume the average str len is 1024 / 2)
+  items.reserve(maxSize / 1024 / 2);
+
   size_t actualSize = getChunk(istr, maxSize, items);
 
   // if we read all the file just sort it and write to destName file

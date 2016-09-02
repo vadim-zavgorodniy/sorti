@@ -12,7 +12,7 @@ struct Item {
 
 typedef std::vector<Item> ItemList;
 
-Item parseItem(std::string line);
+Item parseItem(const std::string& line);
 
 std::ostream& operator<<(std::ostream& ostr, const Item& obj);
 

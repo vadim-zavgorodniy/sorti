@@ -15,7 +15,7 @@ std::ostream& operator<<(std::ostream& ostr, const Item& obj)
 }
 
 //============================================================
-Item parseItem(std::string line) {
+Item parseItem(const std::string& line) {
   Item item;
   int pos = line.find(". ");
   std::string numStr = line.substr(0, pos);
