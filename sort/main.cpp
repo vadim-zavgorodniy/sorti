@@ -226,7 +226,7 @@ void AppConfig::parseFromOptions(int argc, char* argv[]) {
   const char* usage = "Usage: sort source_file dest_file [ram_size]\n" \
     "  source_file - file name to sort\n"                   \
     "  dest_file   - result file name\n"                      \
-    "  ram_size - desired RAM usage size in Mb (default 4 Gb)\n";
+    "  ram_size - desired RAM usage size in Mb (default 4096 Mb)\n";
 
   if (argc < 3) {
     std::cerr << usage << std::endl;
