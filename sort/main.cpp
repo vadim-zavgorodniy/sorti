@@ -191,15 +191,13 @@ void doSort(const std::string& sourceName, const std::string& destName, size_t m
   // new temp file name
   std::string tmpFileName;
 
-  bool firstChunk(true);
-
   // read file by chunks
   while (!istr.eof()) {
     // read and sort
     items.clear();
     getChunk(istr, maxSize, items);
 
-    if (firstChunk && istr.eof()) {
+    if (chunkNames.empty() && istr.eof()) {
       // write
       storeChunk(items, destName);
       break;
