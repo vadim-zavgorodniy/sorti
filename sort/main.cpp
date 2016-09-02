@@ -128,41 +128,50 @@ void mergeChunks(const std::vector<std::string>& chunkNames, const std::string& 
   std::cout << "Merging to: " << destName << std::endl;
   long count = 0;
 
+  typedef std::list<ChunkIterator*>::iterator CIterT;
   typedef std::vector<std::string>::const_iterator VCSIterT;
+
   for (VCSIterT iter = chunkNames.begin(); iter != chunkNames.end(); ++iter) {
     ChunkIterator* citer = new ChunkIterator(*iter);
     chunkFiles.push_back(citer);
   }
 
-  // assume the first is min
-  ChunkIterator* min = *(chunkFiles.begin());
-  while (!chunkFiles.empty()) {
+  try {
+    // assume the first is min
+    ChunkIterator* min = *(chunkFiles.begin());
+    while (!chunkFiles.empty()) {
 
-    typedef std::list<ChunkIterator*>::iterator CIterT;
+      for (CIterT iter = chunkFiles.begin(); iter != chunkFiles.end(); ++iter) {
+        // if next item less then min
+        if (compareItems(min->getItem(), (*iter)->getItem()) == false) {
+          min = *iter;
+        }
+      }
+
+      // write to dest file
+      count++;
+      ostr << min->getItem() << std::endl;
+
+      // try to take next item
+      min->next();
+      // if failed then remove file
+      if (!min->hasNext()) {
+        // stream is empty, so remove
+        chunkFiles.remove(min);
+        delete min;
+
+        if (!chunkFiles.empty()) {
+          // assume the first is min
+          min = *(chunkFiles.begin());
+        }
+      }
+    }
+  } catch (std::exception e) {
     for (CIterT iter = chunkFiles.begin(); iter != chunkFiles.end(); ++iter) {
-      // if next item less then min
-      if (compareItems(min->getItem(), (*iter)->getItem()) == false) {
-        min = *iter;
-      }
+      delete *iter;
     }
-
-    // write to dest file
-    count++;
-    ostr << min->getItem() << std::endl;
-
-    // try to take next item
-    min->next();
-    // if failed then remove file
-    if (!min->hasNext()) {
-      // stream is empty, so remove
-      chunkFiles.remove(min);
-      delete min;
-
-      if (!chunkFiles.empty()) {
-        // assume the first is min
-        min = *(chunkFiles.begin());
-      }
-    }
+    chunkFiles.clear();
+    throw e;
   }
 
   ostr.close();
