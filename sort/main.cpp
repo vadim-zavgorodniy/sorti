@@ -126,7 +126,6 @@ void mergeChunks(const std::vector<std::string>& chunkNames, const std::string& 
   // result stream
   std::ofstream ostr(destName.c_str());
   std::cout << "Merging to: " << destName << std::endl;
-  long count = 0;
 
   typedef std::list<ChunkIterator*>::iterator CIterT;
   typedef std::vector<std::string>::const_iterator VCSIterT;
@@ -149,7 +148,6 @@ void mergeChunks(const std::vector<std::string>& chunkNames, const std::string& 
       }
 
       // write to dest file
-      count++;
       ostr << min->getItem() << std::endl;
 
       // try to take next item
