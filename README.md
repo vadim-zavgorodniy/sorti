@@ -8,7 +8,9 @@
 generate - генератор тестовых данных
 
 Usage: generate file_size file_name
+
   file_size - desired data file size in Mb
+
   file_name - file name to generate
 
 
@@ -16,8 +18,11 @@ Usage: generate file_size file_name
 sort - сортировщик
 
 Usage: sort source_file dest_file [ram_size]
+
   source_file - file name to sort
+
   dest_file   - result file name
+
   ram_size - desired RAM usage size in Mb (default 4096 Mb)
 
 Если размер сортируемого файла превышает переданное в параметре ram_size количество
