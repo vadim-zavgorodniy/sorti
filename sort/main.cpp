@@ -164,7 +164,7 @@ void mergeChunks(const std::vector<std::string>& chunkNames, const std::string& 
         }
       }
     }
-  } catch (std::exception e) {
+  } catch (const std::exception& e) {
     for (CIterT iter = chunkFiles.begin(); iter != chunkFiles.end(); ++iter) {
       delete *iter;
     }
@@ -249,7 +249,7 @@ void AppConfig::parseFromOptions(int argc, char* argv[]) {
       buffer >> size;
     }
   }
-  catch (std::exception e) {
+  catch (const std::exception& e) {
     std::cerr << usage << std::endl;
     throw std::runtime_error("Filed to parse the parameters");
   }
@@ -269,11 +269,11 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Finish." << std::endl;
   }
-  catch (std::runtime_error e) {
+  catch (const std::runtime_error& e) {
     std::cerr << "Error: " << e.what() << std::endl;
     return 1;
   }
-  catch (std::exception e) {
+  catch (const std::exception& e) {
     std::cerr << "Error: " << e.what() << std::endl;
     return 1;
   }

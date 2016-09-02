@@ -182,7 +182,7 @@ void AppConfig::parseFromOptions(int argc, char* argv[]) {
 
     filename = argv[2];
   }
-  catch (std::exception e) {
+  catch (const std::exception& e) {
     std::cerr << usage << std::endl;
     throw std::runtime_error("Filed to parse the parameters");
   }
@@ -213,11 +213,11 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Finish." << std::endl;
   }
-  catch (std::runtime_error e) {
+  catch (const std::runtime_error& e) {
     std::cerr << "Error: " << e.what() << std::endl;
     return 1;
   }
-  catch (std::exception e) {
+  catch (const std::exception& e) {
     std::cerr << "Exception: " << e.what() << std::endl;
     return 2;
   }
