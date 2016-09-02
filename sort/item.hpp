@@ -18,8 +18,8 @@ std::ostream& operator<<(std::ostream& ostr, const Item& obj);
 
 int compareItemsQuick(const void * p1, const void * p2);
 
-bool compareItems(const Item a, const Item b);
+bool compareItems(const Item& a, const Item& b);
 
-void outToStream(ItemList* list, std::ostream& ostr);
+void outToStream(const ItemList& list, std::ostream& ostr);
 
 // #endif

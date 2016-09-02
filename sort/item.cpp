@@ -40,10 +40,7 @@ int compareItemsQuick(const void * p1, const void * p2) {
 }
 
 //============================================================
-bool compareItems(const Item a, const Item b) {
-  // Item& a = *(Item*)p1;
-  // Item& b = *(Item*)p2;
-
+bool compareItems(const Item& a, const Item& b) {
   if (a.str <  b.str) return true;
   if (a.str >  b.str) return false;
   if (a.str == b.str) {
@@ -54,8 +51,8 @@ bool compareItems(const Item a, const Item b) {
 }
 
 //============================================================
-void outToStream(ItemList* list, std::ostream& ostr) {
-  for (ItemList::const_iterator it = list->begin(); it != list->end(); ++it) {
+void outToStream(const ItemList& list, std::ostream& ostr) {
+  for (ItemList::const_iterator it = list.begin(); it != list.end(); ++it) {
     ostr << *it << std::endl;
   }
 }

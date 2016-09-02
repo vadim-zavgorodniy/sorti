@@ -68,23 +68,21 @@ public:
 
 //============================================================
 void openFileIn(std::string name, std::ifstream& istr) {
-  istr.open(name.c_str(), std::ifstream::in);
+  istr.open(name.c_str());
   if (!istr.is_open()) {
     throw std::runtime_error("Unable to open file: " + name);
   }
 }
 
 //============================================================
-ItemList* readItems(std::istream& istr, size_t& readSize) {
-
-  ItemList* lst = new ItemList();
+size_t readItems(std::istream& istr, size_t readSize, ItemList& items) {
 
   size_t size = 0;
   std::string line;
 
   while (getline(istr, line)) {
     Item item = parseItem(line);
-    lst->push_back(item);
+    items.push_back(item);
 
     size += line.size();
 
@@ -93,40 +91,33 @@ ItemList* readItems(std::istream& istr, size_t& readSize) {
     }
   }
 
-  // return actual readed size
-  readSize = size;
-
-  return lst;
+  return size;
 }
 
 //============================================================
-ItemList* getChunk(std::ifstream& istr, size_t size) {
+size_t getChunk(std::ifstream& istr, size_t size, ItemList& items) {
+
+  // reserve some mem (assume the average str len is 1024 / 2)
+  items.reserve(size / 1024 / 2);
 
   // readout items
-  size_t actualSize(size);
-  ItemList* items(readItems(istr, actualSize));
+  size_t actualSize = readItems(istr, size, items);
 
-  std::cout << "Readed lines: " << items->size() << std::endl;
+  std::cout << "Readed lines: " << items.size() << std::endl;
   std::cout << "Readed size: " << actualSize / 1024 / 1024 << " Mb" << std::endl;
 
   // sort
-  qsort(&(*items)[0], items->size(), sizeof(Item), compareItemsQuick);
+  qsort(&(items)[0], items.size(), sizeof(Item), compareItemsQuick);
 
-  return items;
+  return actualSize;
 }
 
 //============================================================
-void storeChunk(ItemList* list, std::string filename) {
+void storeChunk(const ItemList& list, std::string filename) {
   std::ofstream ostr(filename.c_str());
 
-  try {
-    outToStream(list, ostr);
-    ostr.close();
-  }
-  catch (std::exception e) {
-    ostr.close();
-    throw e;
-  }
+  outToStream(list, ostr);
+  ostr.close();
 }
 
 //============================================================
@@ -138,51 +129,45 @@ void mergeChunks(std::vector<std::string> chunkNames, std::string destName) {
   std::ofstream ostr(destName.c_str());
   std::cout << "Merging to: " << destName << std::endl;
   long count = 0;
-  try {
-    typedef std::vector<std::string>::const_iterator VCSIterT;
-    for (VCSIterT iter = chunkNames.begin(); iter != chunkNames.end(); ++iter) {
-      ChunkIterator* citer = new ChunkIterator(*iter);
-      chunkFiles.push_back(citer);
+
+  typedef std::vector<std::string>::const_iterator VCSIterT;
+  for (VCSIterT iter = chunkNames.begin(); iter != chunkNames.end(); ++iter) {
+    ChunkIterator* citer = new ChunkIterator(*iter);
+    chunkFiles.push_back(citer);
+  }
+
+  // assume the first is min
+  ChunkIterator* min = *(chunkFiles.begin());
+  while (!chunkFiles.empty()) {
+
+    typedef std::list<ChunkIterator*>::iterator CIterT;
+    for (CIterT iter = chunkFiles.begin(); iter != chunkFiles.end(); ++iter) {
+      // if next item less then min
+      if (compareItems(min->getItem(), (*iter)->getItem()) == false) {
+        min = *iter;
+      }
     }
 
-    // assume the first is min
-    ChunkIterator* min = *(chunkFiles.begin());
-    while (!chunkFiles.empty()) {
+    // write to dest file
+    count++;
+    ostr << min->getItem() << std::endl;
 
-      typedef std::list<ChunkIterator*>::iterator CIterT;
-      for (CIterT iter = chunkFiles.begin(); iter != chunkFiles.end(); ++iter) {
-        // if next item less then min
-        if (compareItems(min->getItem(), (*iter)->getItem()) == false) {
-          min = *iter;
-        }
+    // try to take next item
+    min->next();
+    // if failed then remove file
+    if (!min->hasNext()) {
+      // stream is empty, so remove
+      chunkFiles.remove(min);
+      delete min;
+
+      if (!chunkFiles.empty()) {
+        // assume the first is min
+        min = *(chunkFiles.begin());
       }
-
-      // write to dest file
-      count++;
-      ostr << min->getItem() << std::endl;
-
-      // try to take next item
-      min->next();
-      // if failed then remove file
-      if (!min->hasNext()) {
-        // stream is empty, so remove
-        chunkFiles.remove(min);
-        delete min;
-
-        if (!chunkFiles.empty()) {
-          // assume the first is min
-          min = *(chunkFiles.begin());
-        }
-      }
-
     }
+  }
 
-    ostr.close();
-  }
-  catch (std::exception e) {
-    ostr.close();
-    throw e;
-  }
+  ostr.close();
 }
 
 //============================================================
@@ -192,56 +177,48 @@ void doSort(std::string sourceName, std::string destName, size_t maxSize) {
   std::ifstream istr;
 
   openFileIn(sourceName.c_str(), istr);
-  try {
 
-    size_t actualSize(maxSize);
-    // read and sort
-    std::auto_ptr<ItemList> items(getChunk(istr, actualSize));
+  // read and sort
+  ItemList items;
+  size_t actualSize = getChunk(istr, maxSize, items);
 
-    // if we read all the file just sort it and write to destName file
-    if (istr.eof()) {
-      // write
-      storeChunk(items.get(), destName.c_str());
-    }
-    else {
+  // if we read all the file just sort it and write to destName file
+  if (istr.eof()) {
+    // write
+    storeChunk(items, destName.c_str());
+  }
+  else {
 
-      std::vector<std::string> chunkNames;
+    std::vector<std::string> chunkNames;
+
+    // new temp file name
+    std::string tmpFileName = tmpnam(NULL);
+    chunkNames.push_back(tmpFileName);
+    std::cout << "tmpFilename: " << tmpFileName << std::endl;
+    // write to temp file
+    storeChunk(items, tmpFileName.c_str());
+
+    // read file by chunks
+    while (!istr.eof()) {
+      // read and sort
+      items.clear();
+      getChunk(istr, maxSize, items);
 
       // new temp file name
       std::string tmpFileName = tmpnam(NULL);
       chunkNames.push_back(tmpFileName);
+
       std::cout << "tmpFilename: " << tmpFileName << std::endl;
+
       // write to temp file
-      storeChunk(items.get(), tmpFileName.c_str());
-
-      // read file by chunks
-      while (!istr.eof()) {
-        size_t actualSize(maxSize);
-        // read and sort
-        items.reset(NULL);
-        items.reset(getChunk(istr, actualSize));
-
-        // new temp file name
-        std::string tmpFileName = tmpnam(NULL);
-        chunkNames.push_back(tmpFileName);
-
-        std::cout << "tmpFilename: " << tmpFileName << std::endl;
-
-        // write to temp file
-        storeChunk(items.get(), tmpFileName.c_str());
-      }
-
-      // and finally merge it
-      mergeChunks(chunkNames, destName);
+      storeChunk(items, tmpFileName.c_str());
     }
 
-    istr.close();
-  }
-  catch (std::exception e) {
-    istr.close();
-    throw e;
+    // and finally merge it
+    mergeChunks(chunkNames, destName);
   }
 
+  istr.close();
 }
 
 //============================================================
@@ -278,10 +255,6 @@ int main(int argc, char* argv[]) {
 
   try {
     AppConfig conf;
-    // conf.sourceName = "/home/warmouse/data/sorti-test/gen_data_10g.txt";
-    // conf.destName = "/home/warmouse/data/sorti-test/sorted_data_10g.txt";
-    // process up to 4 Gb
-    // conf.size = long(4 * 1024 * 1024) * 1024;
     conf.size = 4096;
     conf.parseFromOptions(argc, argv);
 
