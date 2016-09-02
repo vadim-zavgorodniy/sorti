@@ -168,7 +168,6 @@ void mergeChunks(const std::vector<std::string>& chunkNames, const std::string& 
     for (CIterT iter = chunkFiles.begin(); iter != chunkFiles.end(); ++iter) {
       delete *iter;
     }
-    chunkFiles.clear();
     throw e;
   }
 
