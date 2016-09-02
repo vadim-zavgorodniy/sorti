@@ -187,41 +187,36 @@ void doSort(const std::string& sourceName, const std::string& destName, size_t m
   // reserve some mem (assume the average str len is 1024 / 2)
   items.reserve(maxSize / 1024 / 2);
 
-  size_t actualSize = getChunk(istr, maxSize, items);
+  std::vector<std::string> chunkNames;
+  // new temp file name
+  std::string tmpFileName;
 
-  // if we read all the file just sort it and write to destName file
-  if (istr.eof()) {
-    // write
-    storeChunk(items, destName);
-  }
-  else {
+  bool firstChunk(true);
 
-    std::vector<std::string> chunkNames;
+  // read file by chunks
+  while (!istr.eof()) {
+    // read and sort
+    items.clear();
+    getChunk(istr, maxSize, items);
+
+    if (firstChunk && istr.eof()) {
+      // write
+      storeChunk(items, destName);
+      break;
+    }
 
     // new temp file name
     std::string tmpFileName = tmpnam(NULL);
     chunkNames.push_back(tmpFileName);
+
     std::cout << "tmpFilename: " << tmpFileName << std::endl;
+
     // write to temp file
     storeChunk(items, tmpFileName);
+  }
 
-    // read file by chunks
-    while (!istr.eof()) {
-      // read and sort
-      items.clear();
-      getChunk(istr, maxSize, items);
-
-      // new temp file name
-      std::string tmpFileName = tmpnam(NULL);
-      chunkNames.push_back(tmpFileName);
-
-      std::cout << "tmpFilename: " << tmpFileName << std::endl;
-
-      // write to temp file
-      storeChunk(items, tmpFileName);
-    }
-
-    // and finally merge it
+  // and finally merge it
+  if (!chunkNames.empty()) {
     mergeChunks(chunkNames, destName);
   }
 
