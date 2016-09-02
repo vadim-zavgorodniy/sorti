@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <stdlib.h>
 #include <cstdlib>
+#include <ctime>
 #include <algorithm>
 #include <memory>
 #include <limits.h>
@@ -89,7 +90,7 @@ std::string DataGeneragor::generateString(size_t maxLength) {
   std::string str;
 
   // let's gen it
-  for (int i = 0; i < len; i += MIN_BLOCK) {
+  for (size_t i = 0; i < len; i += MIN_BLOCK) {
     char buf[MIN_BLOCK + 1];
     memset(buf, '\0', MIN_BLOCK+1);
     // table offset
