@@ -1,3 +1,5 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -53,7 +55,7 @@ public:
 
   Item next() {
     std::string line;
-    isHasNext = getline(istream, line);
+    isHasNext = (getline(istream, line) ? true : false);
     if (isHasNext) {
       current = parseItem(line);
     }
