@@ -97,7 +97,7 @@ std::string DataGeneragor::generateString(size_t maxLength) {
     int offset = rand() % (charTable.size() - MIN_BLOCK);
 
     // copy blocks to result string
-    strncpy(buf, &charTable[offset], MIN_BLOCK);
+    strncpy_s(buf, &charTable[offset], MIN_BLOCK);
     str += buf;
   }
 
@@ -125,7 +125,7 @@ DataGeneragor::Statistics DataGeneragor::generate(std::ostream& ostr, size_t max
 
     // counting string size
     char numBuf[20];
-    sprintf (numBuf, "%d", num);
+    sprintf_s(numBuf, "%d", num);
     std::string res(numBuf);
     std::string str = "";
 
