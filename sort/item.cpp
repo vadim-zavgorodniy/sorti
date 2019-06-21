@@ -26,6 +26,8 @@ Item parseItem(const std::string& line) {
 }
 
 //============================================================
+// Deprecated. Just for test.
+//============================================================
 int compareItemsQuick(const void * p1, const void * p2) {
   Item& a = *(Item*)p1;
   Item& b = *(Item*)p2;

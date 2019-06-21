@@ -7,7 +7,6 @@
 #include <vector>
 #include <list>
 #include <stdexcept>
-#include <stdlib.h>
 #include <cstdlib>
 #include <algorithm>
 #include <memory>
@@ -106,8 +105,7 @@ size_t getChunk(std::ifstream& istr, size_t size, ItemList& items) {
   std::cout << "Readed size: " << actualSize / 1024 / 1024 << " Mb" << std::endl;
 
   // sort
-//  std::sort(items.begin(), items.end(), compareItems);
-  qsort(&(items)[0], items.size(), sizeof(Item), compareItemsQuick);
+  std::sort(items.begin(), items.end(), compareItems);
 
   return actualSize;
 }
