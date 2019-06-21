@@ -1,0 +1,3 @@
+*.o
+generate/generate
+sort/sort
